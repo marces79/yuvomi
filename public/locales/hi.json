@@ -392,6 +392,9 @@
         "weatherUnavailable": "मौसम अभी उपलब्ध नहीं है"
     },
     "tasks": {
+        "resetOrder": "अपने-आप क्रमबद्ध करें",
+        "resetOrderAria": "स्वचालित क्रम बहाल करें: {{group}}",
+        "resetOrderDone": "\"{{group}}\" फिर से अपने-आप क्रमबद्ध है।",
         "manageCategories": "श्रेणियाँ प्रबंधित करें",
         "addCategory": "+ श्रेणी",
         "title": "कार्य",

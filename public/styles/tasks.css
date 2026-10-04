@@ -478,6 +478,29 @@
   }
 }
 
+/* Zurueck zur automatischen Reihenfolge, am Ende des Gruppenkopfs. Leise: ein
+ * Textknopf in der Farbe der Zaehlung, der erst beim Hovern oder Fokussieren
+ * Gewicht bekommt - er ist die Ausnahme, die Handordnung der Normalfall. Er
+ * steht nur in Gruppen, in denen ueberhaupt etwas von Hand eingeordnet ist. */
+.list-group__reset {
+  margin-inline-start: auto;
+  min-height: var(--target-md);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: var(--font-weight-regular);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+}
+
+.list-group__reset:hover,
+.list-group__reset:focus-visible {
+  color: var(--color-text-primary);
+}
+
 /* Status-Checkbox */
 .task-status-btn {
   width: var(--target-base);

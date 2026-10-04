@@ -99,27 +99,30 @@ test('Migration 231: tasks.sort_order ist nullbar, neue Aufgaben haben keinen Ra
   assert.equal(rankOf(id), null);
 });
 
-test('PATCH /reorder: vergibt die Raenge 1..n in Anfragereihenfolge', async () => {
+/** Die Aufgaben in der Reihenfolge ihrer Raenge (aufsteigend). */
+const byRank = (ids) => [...ids].sort((a, b) => rankOf(a) - rankOf(b));
+
+test('PATCH /reorder: Aufgaben ohne Rang bekommen Raenge in Anfragereihenfolge', async () => {
   const a = await makeTask('A');
   const b = await makeTask('B');
   const c = await makeTask('C');
   const r = await call('PATCH', '/reorder', { as: alice, body: { order: [c, a, b] } });
   assert.equal(r.status, 200);
-  assert.deepEqual(r.body.data, [
-    { id: c, sort_order: 1 }, { id: a, sort_order: 2 }, { id: b, sort_order: 3 },
-  ]);
-  assert.equal(rankOf(c), 1);
-  assert.equal(rankOf(a), 2);
-  assert.equal(rankOf(b), 3);
+  assert.deepEqual(byRank([a, b, c]), [c, a, b]);
+  assert.deepEqual(r.body.data.map((x) => x.id), [c, a, b]);
+  const ranks = r.body.data.map((x) => x.sort_order);
+  assert.equal(new Set(ranks).size, 3, 'drei verschiedene Raenge');
+  assert.deepEqual(ranks, [...ranks].sort((x, y) => x - y), 'aufsteigend in Anfragereihenfolge');
 });
 
-test('PATCH /reorder: zweiter Aufruf ordnet neu, nicht angefuegt', async () => {
+test('PATCH /reorder: ein zweiter Aufruf verteilt dieselben Raenge neu, statt neue zu vergeben', async () => {
   const a = await makeTask('A2');
   const b = await makeTask('B2');
   await call('PATCH', '/reorder', { as: alice, body: { order: [a, b] } });
+  const before = [rankOf(a), rankOf(b)].sort((x, y) => x - y);
   await call('PATCH', '/reorder', { as: alice, body: { order: [b, a] } });
-  assert.equal(rankOf(b), 1);
-  assert.equal(rankOf(a), 2);
+  assert.deepEqual(byRank([a, b]), [b, a]);
+  assert.deepEqual([rankOf(a), rankOf(b)].sort((x, y) => x - y), before, 'die Menge der Raenge bleibt');
 });
 
 test('PATCH /reorder: GET liefert den Rang mit', async () => {
@@ -127,25 +130,90 @@ test('PATCH /reorder: GET liefert den Rang mit', async () => {
   const b = await makeTask('GET-B');
   await call('PATCH', '/reorder', { as: alice, body: { order: [b, a] } });
   const list = await call('GET', '/', { as: alice });
-  const row = list.body.data.find((t) => t.id === b);
-  assert.equal(row.sort_order, 1);
+  const rows = new Map(list.body.data.map((t) => [t.id, t]));
+  assert.ok(rows.get(b).sort_order < rows.get(a).sort_order);
 });
 
-test('PATCH /reorder: Teilmenge ist erlaubt, Ausgelassene behalten ihren Rang', async () => {
-  const a = await makeTask('T-A');
-  const b = await makeTask('T-B');
-  const c = await makeTask('T-C');
-  await call('PATCH', '/reorder', { as: alice, body: { order: [a, b, c] } });
-  const r = await call('PATCH', '/reorder', { as: alice, body: { order: [c, a] } });
+test('PATCH /reorder: eine Teilmenge laesst Ausgelassene stehen und kollidiert mit nichts (Review an #1646)', async () => {
+  // Alice ordnet B, C, A (privat), D. Bob sieht A nicht und sendet D, B, C.
+  const priv = await makeTask('A-privat', { visibility: 'private' });
+  const [b, c, d] = [await makeTask('S-B'), await makeTask('S-C'), await makeTask('S-D')];
+  await call('PATCH', '/reorder', { as: alice, body: { order: [b, c, priv, d] } });
+  const privRank = rankOf(priv);
+
+  const r = await call('PATCH', '/reorder', { as: bob, body: { order: [d, b, c] } });
   assert.equal(r.status, 200);
-  assert.equal(rankOf(b), 2, 'b war nicht Teil der Anfrage');
+  assert.equal(rankOf(priv), privRank, 'die fuer Bob unsichtbare Aufgabe behaelt ihren Rang');
+  assert.deepEqual(byRank([d, b, c]), [d, b, c], 'die genannten stehen in Bobs Reihenfolge');
+  const all = [b, c, d, priv].map(rankOf);
+  assert.equal(new Set(all).size, all.length, 'kein Rang kommt zweimal vor');
+  // Bobs Zug belaesst A zwischen den Aufgaben, zwischen denen es stand: B und C
+  // standen vor A, D dahinter, und die drei Raenge wurden nur neu ausgeteilt.
+  assert.ok(rankOf(d) < rankOf(b) && rankOf(b) < rankOf(c));
 });
 
-test('PATCH /reorder: leere, fehlende und nicht-numerische Listen -> 400', async () => {
-  for (const order of [undefined, [], 'x', [1, 'abc'], [1.5]]) {
+test('PATCH /reorder: gemischt aus Eingeordneten und Neuen: Neue stehen hinter dem hoechsten Rang', async () => {
+  const placed = await makeTask('G-eingeordnet');
+  await call('PATCH', '/reorder', { as: alice, body: { order: [placed] } });
+  const fresh = await makeTask('G-neu');
+  const max = db.prepare('SELECT MAX(sort_order) AS m FROM tasks').get().m;
+  await call('PATCH', '/reorder', { as: alice, body: { order: [fresh, placed] } });
+  assert.deepEqual(byRank([placed, fresh]), [fresh, placed]);
+  assert.ok(rankOf(fresh) <= max + 1, 'die neue Aufgabe nimmt einen freien Rang');
+});
+
+test('PATCH /reorder: Folgeinstanz einer Wiederholung erbt den Rang (Review an #1646)', async () => {
+  const rec = await makeTask('taeglich', { is_recurring: true, recurrence_rule: 'FREQ=DAILY', due_date: '2031-05-06' });
+  const other = await makeTask('daneben');
+  await call('PATCH', '/reorder', { as: alice, body: { order: [rec, other] } });
+  const rank = rankOf(rec);
+  assert.ok(rank !== null);
+
+  const done = await call('PATCH', `/${rec}/status`, { as: alice, body: { status: 'done' } });
+  assert.equal(done.status, 200);
+  const followup = db.prepare('SELECT id, sort_order FROM tasks WHERE recurrence_origin_id = ?').get(rec);
+  assert.ok(followup, 'die Folgeinstanz existiert');
+  assert.equal(followup.sort_order, rank, 'sie nimmt den Platz der Vorgaengerin ein');
+});
+
+test('PUT /:id: ein Kategoriewechsel setzt den Rang zurueck, ein anderer Wechsel nicht (Review an #1646)', async () => {
+  const cats = (await call('GET', '/categories', { as: alice })).body.data.map((c) => c.key);
+  assert.ok(cats.length >= 2);
+  const id = await makeTask('wandert', { category: cats[0] });
+  await call('PATCH', '/reorder', { as: alice, body: { order: [id] } });
+  assert.ok(rankOf(id) !== null);
+
+  const sameCat = await call('PUT', `/${id}`, { as: alice, body: { title: 'wandert 2', category: cats[0] } });
+  assert.equal(sameCat.status, 200, JSON.stringify(sameCat.body));
+  assert.ok(rankOf(id) !== null, 'ohne Kategoriewechsel bleibt der Rang');
+
+  const moved = await call('PUT', `/${id}`, { as: alice, body: { title: 'wandert 2', category: cats[1] } });
+  assert.equal(moved.status, 200, JSON.stringify(moved.body));
+  assert.equal(rankOf(id), null, 'in der neuen Kategorie ist die Aufgabe nicht eingeordnet');
+});
+
+test('PATCH /reorder: leere, fehlende und nicht-ganzzahlige Listen -> 400', async () => {
+  const a = await makeTask('typ-A');
+  // `Number(true)` ist 1, `Number("12")` ist 12, `[[12]]` wird zu 12: alles das
+  // hatte stumm eine fremde Aufgabe umgestellt.
+  for (const order of [undefined, [], 'x', [1, 'abc'], [1.5], [true], [[a]], [String(a)], [null]]) {
     const r = await call('PATCH', '/reorder', { as: alice, body: { order } });
     assert.equal(r.status, 400, `order=${JSON.stringify(order)}`);
   }
+  assert.equal(rankOf(a), null, 'nichts davon hat eine Aufgabe angefasst');
+});
+
+test('PATCH /reorder: ohne JSON-Body -> 400 statt 500', async () => {
+  actor = alice;
+  const res = await fetch(`${base}/reorder`, { method: 'PATCH' });
+  assert.equal(res.status, 400);
+});
+
+test('PATCH /reorder: mehr als 500 IDs -> 400', async () => {
+  const order = Array.from({ length: 501 }, (_, i) => i + 1);
+  const r = await call('PATCH', '/reorder', { as: alice, body: { order } });
+  assert.equal(r.status, 400);
+  assert.match(r.body.error, /500/);
 });
 
 test('PATCH /reorder: doppelte ID -> 400, nichts geaendert', async () => {
@@ -184,5 +252,39 @@ test('PATCH /reorder: eine fuer die Person unsichtbare Aufgabe -> 404', async ()
 test('PATCH /reorder: wird nicht als /:id gelesen (Routenreihenfolge)', async () => {
   const r = await call('PATCH', '/reorder', { as: alice, body: { order: [] } });
   assert.equal(r.status, 400, 'die Reorder-Route antwortet, nicht /:id/status oder ein 404');
-  assert.match(r.body.error, /order/);
+  assert.match(r.body.error, /task IDs/);
+});
+
+// --------------------------------------------------------
+// POST /reorder/reset - zurueck zur automatischen Reihenfolge
+// --------------------------------------------------------
+test('POST /reorder/reset: loescht die Raenge der genannten Aufgaben, nur dieser', async () => {
+  const a = await makeTask('R-A');
+  const b = await makeTask('R-B');
+  const c = await makeTask('R-C');
+  await call('PATCH', '/reorder', { as: alice, body: { order: [a, b, c] } });
+  const cRank = rankOf(c);
+
+  const r = await call('POST', '/reorder/reset', { as: alice, body: { ids: [a, b] } });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.data, [{ id: a, sort_order: null }, { id: b, sort_order: null }]);
+  assert.equal(rankOf(a), null);
+  assert.equal(rankOf(b), null);
+  assert.equal(rankOf(c), cRank, 'nicht genannte Aufgaben behalten ihren Rang');
+});
+
+test('POST /reorder/reset: gleiche Abweisungen wie PATCH /reorder', async () => {
+  const priv = await makeTask('R-privat', { visibility: 'private' });
+  await call('PATCH', '/reorder', { as: alice, body: { order: [priv] } });
+  const rank = rankOf(priv);
+  for (const [body, status] of [
+    [{}, 400], [{ ids: [] }, 400], [{ ids: ['1'] }, 400], [{ ids: [1, 1] }, 400],
+    [{ ids: Array.from({ length: 501 }, (_, i) => i + 1) }, 400],
+    [{ ids: [priv] }, 404],
+    [{ ids: [999999] }, 404],
+  ]) {
+    const r = await call('POST', '/reorder/reset', { as: bob, body });
+    assert.equal(r.status, status, JSON.stringify(body).slice(0, 60));
+  }
+  assert.equal(rankOf(priv), rank, 'die fuer Bob unsichtbare Aufgabe wurde nicht angefasst');
 });

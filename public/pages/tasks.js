@@ -757,6 +757,15 @@ function canReorderTasks(groupMode) {
     && !state.bulkSelectMode && !readOnly() && !actingAsDisplay();
 }
 
+/** Der Knopf am Gruppenkopf, der die Gruppe zur automatischen Reihenfolge zurueckbringt. */
+function taskResetButtonHtml(id, label) {
+  return `
+        <button type="button" class="list-group__reset" data-group-reset="${esc(id)}"
+                aria-label="${esc(t('tasks.resetOrderAria', { group: label }))}">
+          ${esc(t('tasks.resetOrder'))}
+        </button>`;
+}
+
 function renderTaskGroups(tasks, groupMode) {
   if (!tasks.length) {
     // Leere Suche ≠ leeres Modul: bei aktiver Suche wäre „Noch keine Aufgaben"
@@ -816,6 +825,7 @@ function renderTaskGroups(tasks, groupMode) {
           <span>${esc(label)}</span>
         </button>
         <span class="list-group__count">${groupTasks.length}</span>
+        ${reorderable && groupTasks.some((x) => x.sort_order != null) ? taskResetButtonHtml(id, label) : ''}
       </h2>
       ${collapsed ? '' : `<div class="row-carrier">
         ${sorted.map((t) => renderSwipeRow(t, renderTaskCard(t, {
@@ -4493,6 +4503,14 @@ async function sendTaskOrder(groupEl, container) {
       const task = state.tasks.find((x) => x.id === id);
       if (task) task.sort_order = idx + 1;
     });
+    // Der Knopf zum Zuruecksetzen erscheint mit dem ERSTEN Zug, nicht erst beim
+    // naechsten Neuzeichnen: ohne ihn wuesste man nach einem versehentlichen
+    // Zug nicht, dass es einen Weg zurueck gibt.
+    const title = groupEl.querySelector('.list-group__title');
+    if (title && !title.querySelector('[data-group-reset]')) {
+      const label = groupEl.querySelector('.list-group__toggle span')?.textContent?.trim() ?? '';
+      title.insertAdjacentHTML('beforeend', taskResetButtonHtml(groupEl.dataset.groupId, label));
+    }
     return true;
   } catch (err) {
     window.yuvomi.showToast(err.message, 'danger');
@@ -4550,6 +4568,31 @@ function moveTaskRow(row, delta, container) {
 }
 
 /**
+ * Zurueck zur automatischen Reihenfolge: loescht die Raenge der Aufgaben, die
+ * diese Gruppe gerade zeigt, und laedt neu. Die Gruppe sortiert sich danach
+ * wieder nach Faelligkeit und Prioritaet. Der Fokus geht auf den Gruppenkopf,
+ * weil der Knopf mit dem Neuzeichnen verschwindet.
+ */
+async function resetTaskOrder(groupEl, container) {
+  const rowsEl = groupEl?.querySelector('.row-carrier');
+  const key = groupEl?.dataset.groupId;
+  if (!rowsEl || key === undefined) return;
+  const ids = taskRows(rowsEl).map((row) => Number(row.dataset.swipeId));
+  if (!ids.length) return;
+  const label = groupEl.querySelector('.list-group__toggle span')?.textContent?.trim() ?? '';
+  try {
+    await api.post('/tasks/reorder/reset', { ids });
+    await loadTasks(container);
+    const el = container.querySelector('#tasks-reorder-announce');
+    if (el) el.textContent = t('tasks.resetOrderDone', { group: label });
+    const toggles = [...container.querySelectorAll('[data-group-toggle]')];
+    toggles.find((b) => b.dataset.groupToggle === key)?.focus();
+  } catch (err) {
+    window.yuvomi.showToast(err.message, 'danger');
+  }
+}
+
+/**
  * Je Kategorie-Gruppe eine eigene Instanz und kein `group`-Verbund: ein Zug in
  * eine andere Gruppe waere ein Kategoriewechsel, keine Umsortierung - dafuer
  * gibt es den Bearbeiten-Dialog.
@@ -4575,6 +4618,10 @@ function wireTaskReorder(container) {
   // aus, ein Listener je Aufruf stapelte sich mit jedem Neuzeichnen.
   if (listEl.dataset.reorderWired) return;
   listEl.dataset.reorderWired = '1';
+  listEl.addEventListener('click', (e) => {
+    const reset = e.target.closest?.('[data-group-reset]');
+    if (reset) resetTaskOrder(reset.closest('.task-group'), container);
+  });
   listEl.addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
     const handle = e.target.closest?.('.list-row__drag');
@@ -5142,6 +5189,9 @@ function wireDoerContextMenu(listEl) {
   listEl.addEventListener('pointerdown', (e) => {
     clear();
     if (state.bulkSelectMode) return;
+    // Der Griff der Handordnung gehoert dem Umsortieren: ein Halten daran ohne
+    // Bewegung oeffnete sonst beim Loslassen die Personenauswahl.
+    if (e.target.closest?.('.list-row__drag')) return;
     const card = e.target.closest?.('.task-card');
     if (!doerPanelOf(card) || e.target.closest('.popover-menu')) return;
     const primary = e.pointerType !== 'mouse' || e.button === 0;
@@ -6104,8 +6154,8 @@ export const __test = {
   // nur im Quelltext behauptet: die Karte fuer das Markup, das Einhaengen der
   // Wischgeste fuer den Weg, der gar kein Markup hat.
   renderTaskCard, wireSwipeGestures,
-  // Handordnung: Vergleich, Griffe, Persistenz (Test: test-tasks-reorder.js).
-  sortTasksManual, canReorderTasks, moveTaskRow, wireTaskReorder,
+  // Handordnung: Vergleich, Griffe, Persistenz (Test: test-tasks-reorder-ui.js).
+  sortTasksManual, canReorderTasks, moveTaskRow, wireTaskReorder, resetTaskOrder,
   // Der Aufgaben-Dialog als Markup: welche Felder er zeigt und wen er anbietet.
   renderModalContent,
   // Der Erinnerungs-Abschnitt einzeln, weil er einen Zustand zu BENENNEN hat,

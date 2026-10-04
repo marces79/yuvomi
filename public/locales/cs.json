@@ -430,6 +430,9 @@
         "weatherUnavailable": "Počasí momentálně není k dispozici"
     },
     "tasks": {
+        "resetOrder": "Řadit automaticky",
+        "resetOrderAria": "Obnovit automatické řazení: {{group}}",
+        "resetOrderDone": "Skupina „{{group}}“ je opět řazena automaticky.",
         "manageCategories": "Spravovat kategorie",
         "addCategory": "+ kategorie",
         "title": "Úkoly",

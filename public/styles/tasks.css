@@ -1000,6 +1000,29 @@
     align-self: center;
   }
 
+  /* Der Griff der Handordnung bekommt eine eigene Endspalte ueber beide
+   * Zeilen. Ohne sie fiele er als viertes Rasterkind in eine dritte Zeile und
+   * machte jede Zeile doppelt so hoch; Titel und Metazeile enden dafuer vor
+   * ihm statt unter ihm. Die Regeln haengen am Griff selbst (:has), damit
+   * Zeilen ohne Griff - anderes Gruppieren, Auswahlmodus, nur lesen - ihr
+   * Raster behalten. */
+  .task-card__main:has(> .list-row__drag) {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .task-card__main:has(> .list-row__drag) .task-card__title {
+    grid-column: 2 / 4;
+  }
+
+  .task-card__main:has(> .list-row__drag):not(:has(> .avatar-stack)) .task-card__meta {
+    grid-column: 2 / 4;
+  }
+
+  .task-card__main > .list-row__drag {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+  }
+
   /* Ein Long-Press ist hier eine Frage nach der Person, kein Markieren und
    * kein Systemmenue fuer den Titeltext. */
   .task-card__main {

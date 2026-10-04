@@ -761,6 +761,54 @@ router.patch('/categories/reorder', (req, res) => {
   }
 });
 
+// PATCH /api/v1/tasks/reorder  Body: { order: number[] }
+// Handordnung INNERHALB einer Kategorie: die IDs in der gewuenschten Reihenfolge
+// bekommen die Raenge 1..n. Muss wie /categories/reorder vor den /:id-Routen
+// stehen.
+//
+// Die Anfrage nennt nur die Aufgaben, die der Client in dieser Gruppe sieht -
+// bei aktivem Filter also eine Teilmenge. Ausgelassene behalten ihren Rang;
+// kollidiert er mit einem neuen, entscheidet die bisherige Reihenfolge
+// (Faelligkeit, Prioritaet) zwischen beiden. Eine Vollstaendigkeitspflicht wie
+// im Einkauf gaebe es hier nur um den Preis, dass ein Filter das Umsortieren
+// verbietet.
+//
+// Nur oberste Aufgaben, die die Person sehen darf: eine fremde oder
+// Unteraufgaben-ID wuerde sonst eine Aufgabe umnummerieren, die in keiner Liste
+// dieser Person steht. Das Umsortieren aendert keinen Inhalt, darum greift die
+// Sperre einzelner Aufgaben (locked) hier nicht - die Reihenfolge gehoert dem
+// Haushalt, nicht dem Ersteller.
+router.patch('/reorder', (req, res) => {
+  try {
+    const order = req.body.order;
+    if (!Array.isArray(order) || order.length === 0)
+      return res.status(400).json({ error: 'order must be a non-empty array of task IDs.', code: 400 });
+    if (order.length > MAX_BULK_TASKS)
+      return res.status(400).json({ error: `At most ${MAX_BULK_TASKS} tasks at a time.`, code: 400 });
+
+    const ids = order.map(Number);
+    if (ids.some((id) => !Number.isInteger(id)))
+      return res.status(400).json({ error: 'order must only contain task IDs.', code: 400 });
+    if (new Set(ids).size !== ids.length)
+      return res.status(400).json({ error: 'order must not contain an ID twice.', code: 400 });
+
+    const me = req.authUserId || req.session.userId;
+    const visible = new Set(visibleTaskIds(ids, me));
+    const topLevel = new Set(db.get().prepare(
+      `SELECT id FROM tasks WHERE parent_task_id IS NULL AND id IN (${ids.map(() => '?').join(',')})`
+    ).all(...ids).map((r) => r.id));
+    if (ids.some((id) => !visible.has(id) || !topLevel.has(id)))
+      return res.status(404).json({ error: 'Task not found.', code: 404 });
+
+    const update = db.get().prepare('UPDATE tasks SET sort_order = ? WHERE id = ?');
+    db.get().transaction(() => ids.forEach((id, idx) => update.run(idx + 1, id)))();
+    res.json({ data: ids.map((id, idx) => ({ id, sort_order: idx + 1 })) });
+  } catch (err) {
+    log.error('PATCH /reorder error:', err);
+    res.status(500).json({ error: 'Internal server error.', code: 500 });
+  }
+});
+
 // PUT /api/v1/tasks/categories/:key  Body: { name } → benennt um (Key bleibt stabil,
 // label_key wird gelöscht → der Custom-Name gilt fortan).
 router.put('/categories/:key', (req, res) => {

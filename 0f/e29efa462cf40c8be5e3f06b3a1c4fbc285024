@@ -1,0 +1,91 @@
+public/locales/fa.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 402-404
+server/routes/tasks.js
+  s_80f9dd3e2d1ea0::t_9872b4d35b503d 764-803,805-806,808-817,819-822,825-826,828-842,849-867,1407-1408,1413-1420
+  s_80f9dd3e2d1ea0::t_f23ed520f67805 1742-1743,1773-1778
+public/locales/hi.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/cs.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 426-428
+public/locales/el.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/ar.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 502-504
+public/locales/es.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/sv.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/fr.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/hu.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/pt.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/en.json
+  s_80f9dd3e2d1ea0::t_b50e9e92028d40 388-390
+public/locales/uk.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 464-466
+test/test-tasks-reorder.js
+  s_80f9dd3e2d1ea0::t_5c63834769684a 255
+  s_80f9dd3e2d1ea0::t_33ef17e81a6123 102-105,111-115,118,122,124-125,133-134,137-144,146-152,155-199,203-216,256-289
+test/test-tasks-reorder-ui.js
+  s_80f9dd3e2d1ea0::t_d97c038de7b5bb 11-16,37,106-153,160-161,165,167-199,201-225,237-284,307-321,323-324
+  s_80f9dd3e2d1ea0::t_d05de272337f3d 154-159,162-164,166,200,228-236
+  s_80f9dd3e2d1ea0::t_3be04ca2a92dcc 226-227,285-306
+public/locales/zh.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/vi.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/fil.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 402-404
+public/locales/de.json
+  s_80f9dd3e2d1ea0::t_b50e9e92028d40 402-404
+public/locales/ru.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 464-466
+server/openapi/paths/tasks.js
+  s_80f9dd3e2d1ea0::t_b2657ea7bf3640 86-89
+public/pages/tasks.js
+  s_80f9dd3e2d1ea0::t_7f7bbcc2066570 755-763,823,4337-4344
+  s_80f9dd3e2d1ea0::t_c0b8dadf19e5f8 4402-4425,4452-4455,5022-5024,5972-5973
+  s_80f9dd3e2d1ea0::t_fa28b2bebc5d33 4401
+CHANGELOG.md
+  s_80f9dd3e2d1ea0::t_11d4e0637f4a68 10-21
+public/locales/ja.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/nb.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/nl.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/it.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/pl.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 478-480
+public/styles/tasks.css
+  s_80f9dd3e2d1ea0::t_c0b8dadf19e5f8 478-500
+docs/test-suites.md
+  s_80f9dd3e2d1ea0::t_04b71d7f403f3d 70-71
+public/locales/pt-BR.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+public/locales/id.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 402-404
+public/locales/ko.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 402-404
+public/locales/tr.json
+  s_80f9dd3e2d1ea0::t_8bb98730f19976 388-390
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0fe29efa462cf40c8be5e3f06b3a1c4fbc285024",
+  "prompts": {},
+  "sessions": {
+    "s_80f9dd3e2d1ea0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3767131e-9a46-494c-a336-d16b9a17b5d5",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Marco Schäfer <274220515+marces79@users.noreply.github.com>"
+    }
+  }
+}

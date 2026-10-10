@@ -93,7 +93,7 @@ async function makeTask(title, extra = {}) {
 
 const rankOf = (id) => db.prepare('SELECT sort_order FROM tasks WHERE id = ?').get(id).sort_order;
 
-test('Migration 231: tasks.sort_order ist nullbar, neue Aufgaben haben keinen Rang', async () => {
+test('Migration 238: tasks.sort_order ist nullbar, neue Aufgaben haben keinen Rang', async () => {
   const col = db.prepare('PRAGMA table_info(tasks)').all().find((c) => c.name === 'sort_order');
   assert.ok(col, 'die Spalte existiert');
   assert.equal(col.notnull, 0, 'NULL = nie von Hand eingeordnet');

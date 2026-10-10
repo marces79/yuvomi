@@ -1,0 +1,21 @@
+docs/test-suites.md
+  s_80f9dd3e2d1ea0::t_2cf9585d2702a8 71
+test/test-tasks-reorder.js
+  s_80f9dd3e2d1ea0::t_2cf9585d2702a8 96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0b49946164fbe44807e57a23fa261d263efb7f6b",
+  "prompts": {},
+  "sessions": {
+    "s_80f9dd3e2d1ea0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3767131e-9a46-494c-a336-d16b9a17b5d5",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Marco Schäfer <274220515+marces79@users.noreply.github.com>"
+    }
+  }
+}

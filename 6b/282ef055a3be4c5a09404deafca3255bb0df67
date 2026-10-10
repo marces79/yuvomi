@@ -1,0 +1,37 @@
+test/test-tasks-reorder.js
+  s_80f9dd3e2d1ea0::t_2e009aa63bd2d9 1-188
+server/routes/tasks.js
+  s_80f9dd3e2d1ea0::t_cf01cf7b2ff870 764-811
+test/test-tasks-reorder-ui.js
+  s_80f9dd3e2d1ea0::t_5f5d6188a94754 1-108
+server/openapi/paths/tasks.js
+  s_80f9dd3e2d1ea0::t_3966cf98b924d9 85-87
+public/styles/tasks.css
+  s_80f9dd3e2d1ea0::t_0942a904c076ec 1003-1025
+docs/test-suites.md
+  s_80f9dd3e2d1ea0::t_bf90eb8f195f5b 71
+  s_80f9dd3e2d1ea0::t_ac452f5b7697db 72
+package.json
+  s_80f9dd3e2d1ea0::t_5c43acf0ff385c 61-62
+server/db.js
+  s_80f9dd3e2d1ea0::t_2268acd86e246a 10094-10095,10468-10482
+public/pages/tasks.js
+  s_80f9dd3e2d1ea0::t_e18c549dcc3201 484,663-672,735-759,789-790,792,795,826
+  s_80f9dd3e2d1ea0::t_6f64fa5635d453 3737,4344-4345,4433-4586,5949,6107-6108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6b282ef055a3be4c5a09404deafca3255bb0df67",
+  "prompts": {},
+  "sessions": {
+    "s_80f9dd3e2d1ea0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3767131e-9a46-494c-a336-d16b9a17b5d5",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Marco Schäfer <274220515+marces79@users.noreply.github.com>"
+    }
+  }
+}

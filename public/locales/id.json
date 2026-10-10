@@ -407,7 +407,7 @@
     },
     "tasks": {
         "resetOrder": "Urutkan otomatis",
-        "resetOrderAria": "Pulihkan urutan otomatis: {{group}}",
+        "resetOrderAria": "Urutkan otomatis: {{group}}",
         "resetOrderDone": "\"{{group}}\" diurutkan otomatis lagi.",
         "manageCategories": "Kelola kategori",
         "addCategory": "+ Kategori",

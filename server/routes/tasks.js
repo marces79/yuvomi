@@ -828,9 +828,15 @@ router.patch('/reorder', (req, res) => {
     const placeholders = ids.map(() => '?').join(',');
     let ranks;
     db.get().transaction(() => {
-      const current = db.get()
+      // Jeder gehaltene Rang wird nur EINMAL ausgeteilt. Dieselbe Zahl kann im
+      // Pool zweimal stehen: die Folgeinstanz einer Wiederholung erbt den Rang
+      // ihrer erledigten Vorgaengerin, und mit angezeigten erledigten Aufgaben
+      // sind beide in der Anfrage. Zweimal ausgeteilt gaeben sie zwei Aufgaben
+      // dieselbe Nummer. Die fehlenden Raenge kommen ueber denselben Weg wie bei
+      // Aufgaben ohne Rang: hinter dem groessten in Gebrauch.
+      const current = [...new Set(db.get()
         .prepare(`SELECT sort_order FROM tasks WHERE id IN (${placeholders}) AND sort_order IS NOT NULL`)
-        .all(...ids).map((r) => r.sort_order).sort((a, b) => a - b);
+        .all(...ids).map((r) => r.sort_order))].sort((a, b) => a - b);
       const max = db.get().prepare('SELECT COALESCE(MAX(sort_order), 0) AS m FROM tasks').get().m;
       // Neue Raenge liegen alle ueber dem groessten bestehenden, die Liste
       // bleibt also aufsteigend.

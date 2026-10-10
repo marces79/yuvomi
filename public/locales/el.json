@@ -393,7 +393,7 @@
     },
     "tasks": {
         "resetOrder": "Αυτόματη ταξινόμηση",
-        "resetOrderAria": "Επαναφορά αυτόματης σειράς: {{group}}",
+        "resetOrderAria": "Αυτόματη ταξινόμηση: {{group}}",
         "resetOrderDone": "Η ομάδα «{{group}}» ταξινομείται ξανά αυτόματα.",
         "manageCategories": "Διαχείριση κατηγοριών",
         "addCategory": "+ κατηγορία",

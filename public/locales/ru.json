@@ -469,7 +469,7 @@
     },
     "tasks": {
         "resetOrder": "Сортировать автоматически",
-        "resetOrderAria": "Восстановить автоматический порядок: {{group}}",
+        "resetOrderAria": "Сортировать автоматически: {{group}}",
         "resetOrderDone": "Для «{{group}}» снова включена автоматическая сортировка.",
         "manageCategories": "Управление категориями",
         "addCategory": "+ категория",

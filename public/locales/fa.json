@@ -407,7 +407,7 @@
     },
     "tasks": {
         "resetOrder": "مرتب‌سازی خودکار",
-        "resetOrderAria": "بازگرداندن ترتیب خودکار: {{group}}",
+        "resetOrderAria": "مرتب‌سازی خودکار: {{group}}",
         "resetOrderDone": "«{{group}}» دوباره به‌طور خودکار مرتب شد.",
         "manageCategories": "مدیریت دسته‌ها",
         "addCategory": "+ دسته",

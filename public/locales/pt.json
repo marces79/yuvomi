@@ -393,7 +393,7 @@
     },
     "tasks": {
         "resetOrder": "Ordenar automaticamente",
-        "resetOrderAria": "Repor a ordem automática: {{group}}",
+        "resetOrderAria": "Ordenar automaticamente: {{group}}",
         "resetOrderDone": "Ordem automática reposta para \"{{group}}\".",
         "manageCategories": "Gerir categorias",
         "addCategory": "+ categoria",

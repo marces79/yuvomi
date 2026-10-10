@@ -1,7 +1,9 @@
 /**
  * Modul: Aufgaben - Handordnung innerhalb einer Kategorie (PATCH /tasks/reorder)
  * Zweck: End-to-End ueber den echten Router gegen eine migrierte Datenbank.
- *        Die Route vergibt die Raenge 1..n in der Reihenfolge der Anfrage und
+ *        Die Route TEILT DIE RAENGE UM: die Raenge, die die genannten Aufgaben
+ *        schon tragen, werden in der Reihenfolge der Anfrage neu ausgeteilt
+ *        (jeder nur einmal), Rangloses bekommt neue hinter dem groessten. Sie
  *        weist ab, was nicht umsortiert werden darf: leere oder doppelte
  *        Listen, Unteraufgaben, unsichtbare und unbekannte Aufgaben.
  * Ausfuehren: npm run test:tasks-reorder
@@ -150,6 +152,26 @@ test('PATCH /reorder: eine Teilmenge laesst Ausgelassene stehen und kollidiert m
   // Bobs Zug belaesst A zwischen den Aufgaben, zwischen denen es stand: B und C
   // standen vor A, D dahinter, und die drei Raenge wurden nur neu ausgeteilt.
   assert.ok(rankOf(d) < rankOf(b) && rankOf(b) < rankOf(c));
+});
+
+test('PATCH /reorder: derselbe Rang zweimal im Pool wird nur einmal ausgeteilt (Review an #1646)', async () => {
+  // X=10, R=11 (taeglich), Y=12. R wird erledigt, die Folgeinstanz F erbt Rang 11.
+  // Mit angezeigten erledigten Aufgaben sendet der Client X, F, Y, R.
+  const x = await makeTask('P-X');
+  const rec = await makeTask('P-R', { is_recurring: true, recurrence_rule: 'FREQ=DAILY', due_date: '2031-05-06' });
+  const y = await makeTask('P-Y');
+  const setRank = db.prepare('UPDATE tasks SET sort_order = ? WHERE id = ?');
+  setRank.run(10, x); setRank.run(11, rec); setRank.run(12, y);
+  await call('PATCH', `/${rec}/status`, { as: alice, body: { status: 'done' } });
+  const followup = db.prepare('SELECT id, sort_order FROM tasks WHERE recurrence_origin_id = ?').get(rec);
+  assert.equal(followup.sort_order, 11, 'Ausgangslage: Original und Folgeinstanz tragen denselben Rang');
+
+  const r = await call('PATCH', '/reorder', { as: alice, body: { order: [x, followup.id, y, rec] } });
+  assert.equal(r.status, 200);
+  const ranks = [x, followup.id, y, rec].map(rankOf);
+  assert.equal(new Set(ranks).size, 4, `kein Rang kommt zweimal vor: ${ranks.join(', ')}`);
+  assert.deepEqual(ranks, [...ranks].sort((a, b) => a - b), 'und sie stehen in Anfragereihenfolge');
+  assert.deepEqual(r.body.data.map((e) => e.sort_order), ranks, 'die Antwort traegt die echten Raenge');
 });
 
 test('PATCH /reorder: gemischt aus Eingeordneten und Neuen: Neue stehen hinter dem hoechsten Rang', async () => {

@@ -4495,14 +4495,22 @@ async function sendTaskOrder(groupEl, container) {
   const order = taskRows(rowsEl).map((row) => Number(row.dataset.swipeId));
   if (!order.length) return true;
   try {
-    await api.patch('/tasks/reorder', { order });
+    const res = await api.patch('/tasks/reorder', { order });
     // Nur den State nachziehen, nicht neu zeichnen: das DOM steht schon richtig,
     // und ein Neuzeichnen nahm dem Griff mitten in einer Tastaturbedienung den
     // Fokus.
-    order.forEach((id, idx) => {
+    //
+    // DIE RAENGE KOMMEN AUS DER ANTWORT, nicht aus der Position. Der Server
+    // verteilt die Raenge der genannten Aufgaben neu und vergibt kein 1..n; ein
+    // selbst gerechnetes `idx + 1` widerspricht ihm, sobald die Gruppe nur eine
+    // Teilmenge zeigt (Suche, "heute faellig"): beide Filter wirken im Client und
+    // zeichnen aus dem State neu - die Reihenfolge nach dem Loeschen des Filters
+    // stimmte dann nicht mit dem Server ueberein, und der naechste Zug machte
+    // sie dauerhaft.
+    for (const { id, sort_order: rank } of res?.data ?? []) {
       const task = state.tasks.find((x) => x.id === id);
-      if (task) task.sort_order = idx + 1;
-    });
+      if (task) task.sort_order = rank;
+    }
     // Der Knopf zum Zuruecksetzen erscheint mit dem ERSTEN Zug, nicht erst beim
     // naechsten Neuzeichnen: ohne ihn wuesste man nach einem versehentlichen
     // Zug nicht, dass es einen Weg zurueck gibt.
@@ -4536,9 +4544,9 @@ function persistTaskOrder(groupEl, container, movedRow) {
   const running = taskOrderRuns.get(key);
   if (running) { running.again = true; return; }
 
-  const run = { again: false };
+  const run = { again: false, done: null };
   taskOrderRuns.set(key, run);
-  (async () => {
+  run.done = (async () => {
     try {
       let ok = true;
       do {
@@ -4581,6 +4589,9 @@ async function resetTaskOrder(groupEl, container) {
   if (!ids.length) return;
   const label = groupEl.querySelector('.list-group__toggle span')?.textContent?.trim() ?? '';
   try {
+    // Ein Zug derselben Gruppe, der noch gesichert wird, wuerde das Zuruecksetzen
+    // ueberholen, und die Raenge waeren wieder da. Erst abwarten.
+    await taskOrderRuns.get(key)?.done;
     await api.post('/tasks/reorder/reset', { ids });
     await loadTasks(container);
     const el = container.querySelector('#tasks-reorder-announce');

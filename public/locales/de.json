@@ -407,7 +407,7 @@
     },
     "tasks": {
         "resetOrder": "Automatisch sortieren",
-        "resetOrderAria": "Automatische Reihenfolge wiederherstellen: {{group}}",
+        "resetOrderAria": "Automatisch sortieren: {{group}}",
         "resetOrderDone": "„{{group}}“ ist wieder automatisch sortiert.",
         "manageCategories": "Kategorien verwalten",
         "addCategory": "+ Kategorie",

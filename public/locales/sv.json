@@ -393,7 +393,7 @@
     },
     "tasks": {
         "resetOrder": "Sortera automatiskt",
-        "resetOrderAria": "Återställ automatisk ordning: {{group}}",
+        "resetOrderAria": "Sortera automatiskt: {{group}}",
         "resetOrderDone": "”{{group}}” sorteras automatiskt igen.",
         "manageCategories": "Hantera kategorier",
         "addCategory": "+ kategori",

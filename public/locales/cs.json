@@ -431,7 +431,7 @@
     },
     "tasks": {
         "resetOrder": "Řadit automaticky",
-        "resetOrderAria": "Obnovit automatické řazení: {{group}}",
+        "resetOrderAria": "Řadit automaticky: {{group}}",
         "resetOrderDone": "Skupina „{{group}}“ je opět řazena automaticky.",
         "manageCategories": "Spravovat kategorie",
         "addCategory": "+ kategorie",

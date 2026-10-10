@@ -507,7 +507,7 @@
     },
     "tasks": {
         "resetOrder": "الترتيب التلقائي",
-        "resetOrderAria": "استعادة الترتيب التلقائي: {{group}}",
+        "resetOrderAria": "الترتيب التلقائي: {{group}}",
         "resetOrderDone": "تم ترتيب «{{group}}» تلقائيًا مرة أخرى.",
         "manageCategories": "إدارة الفئات",
         "addCategory": "+ فئة",

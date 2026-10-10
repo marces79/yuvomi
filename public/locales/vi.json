@@ -393,7 +393,7 @@
     },
     "tasks": {
         "resetOrder": "Sắp xếp tự động",
-        "resetOrderAria": "Khôi phục thứ tự tự động: {{group}}",
+        "resetOrderAria": "Sắp xếp tự động: {{group}}",
         "resetOrderDone": "\"{{group}}\" đã được sắp xếp tự động trở lại.",
         "manageCategories": "Quản lý danh mục",
         "addCategory": "+ danh mục",

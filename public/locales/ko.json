@@ -407,7 +407,7 @@
     },
     "tasks": {
         "resetOrder": "자동으로 정렬",
-        "resetOrderAria": "자동 정렬 순서로 복원: {{group}}",
+        "resetOrderAria": "자동으로 정렬: {{group}}",
         "resetOrderDone": "\"{{group}}\" 그룹이 다시 자동으로 정렬됩니다.",
         "manageCategories": "카테고리 관리",
         "addCategory": "+ 카테고리",

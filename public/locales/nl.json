@@ -393,7 +393,7 @@
     },
     "tasks": {
         "resetOrder": "Automatisch sorteren",
-        "resetOrderAria": "Automatische volgorde herstellen: {{group}}",
+        "resetOrderAria": "Automatisch sorteren: {{group}}",
         "resetOrderDone": "„{{group}}” wordt weer automatisch gesorteerd.",
         "manageCategories": "Categorieën beheren",
         "addCategory": "+ categorie",

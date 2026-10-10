@@ -118,10 +118,14 @@ test('tasks: read - keine Griffe, auch wenn alles andere stimmt', () => {
   }
 });
 
-test('renderTaskCard: die Wischgeste ignoriert den Griff', () => {
-  // `wireSwipeGestures` baut die Optionen und gibt sie zurueck (siehe dort).
-  const optionen = tasks.wireSwipeGestures({ querySelector: () => null });
-  assert.equal(optionen, undefined, 'ohne Liste wird nichts verdrahtet');
+test('die Wischgeste ignoriert den Griff', () => {
+  // `wireSwipeGestures` baut die Optionen und gibt sie zurueck (siehe dort). Mit
+  // einer Liste wird verdrahtet, der Griff steht in `ignore`: ein Zug daran ist
+  // Umsortieren, kein Wisch. Gegenprobe: ohne Liste kommt gar nichts zurueck.
+  assert.equal(tasks.wireSwipeGestures({ querySelector: () => null }), undefined);
+  const liste = { querySelectorAll: () => [], querySelector: () => null, addEventListener() {} };
+  const optionen = tasks.wireSwipeGestures({ querySelector: (sel) => (sel === '#task-list' ? liste : null) });
+  assert.equal(optionen.ignore, '.list-row__drag');
 });
 
 // --------------------------------------------------------
@@ -238,6 +242,41 @@ test('Pfeil am Griff: ordnet die Zeilen um und sendet PATCH /tasks/reorder mit d
       delete globalThis.__sortableCalls;
     }
   });
+});
+
+test('die Raenge im State kommen aus der Antwort des Servers, nicht aus der Position (Review an #1646)', async () => {
+  // Der Server verteilt Raenge um und vergibt kein 1..n. Eine Gruppe, die nur
+  // eine Teilmenge zeigt (Suche), hat deshalb Raenge wie 3 und 6 - mit `idx + 1`
+  // im Client stimmte die Reihenfolge nach dem Loeschen des Filters nicht mehr.
+  const calls = [];
+  globalThis.__apiStub = {
+    patch: async (path, body) => {
+      calls.push({ path, body });
+      return { data: body.order.map((id, i) => ({ id, sort_order: [3, 6][i] })) };
+    },
+    get: async () => ({ data: [] }),
+  };
+  const vorher = tasks.state.tasks;
+  tasks.state.tasks = [task({ id: 11, sort_order: 3 }), task({ id: 12, sort_order: 6 })];
+  try {
+    const { group, rowsEl } = fakeGroup([[11, 'A'], [12, 'B']]);
+    const { container, listeners } = fakeContainer([group]);
+    mitZustand({ groupMode: 'category' }, () => tasks.wireTaskReorder(container));
+    listeners.keydown({
+      key: 'ArrowDown',
+      preventDefault() {},
+      target: { closest: (sel) => (sel === '.list-row__drag' ? { closest: () => rowsEl.children[0] } : null) },
+    });
+    await tick();
+    assert.deepEqual(calls[0].body, { order: [12, 11] });
+    const rank = (id) => tasks.state.tasks.find((t) => t.id === id).sort_order;
+    assert.equal(rank(12), 3, 'der Rang steht, wie der Server ihn vergeben hat');
+    assert.equal(rank(11), 6);
+    assert.ok(![1, 2].includes(rank(11)) && ![1, 2].includes(rank(12)), 'nicht 1..n');
+  } finally {
+    tasks.state.tasks = vorher;
+    delete globalThis.__apiStub;
+  }
 });
 
 test('Pfeil an der Kante bewegt nichts und sendet nichts', async () => {

@@ -1249,6 +1249,8 @@
   /* Kategorienamen trennen statt brechen (W1, test:typography). */
   hyphens: auto;
   hyphenate-limit-chars: 6 4 4;
+  -webkit-hyphenate-limit-before: 4;
+  -webkit-hyphenate-limit-after: 4;
   overflow-wrap: anywhere;
   color: var(--color-text-primary);
   background: var(--color-surface);
@@ -2659,10 +2661,22 @@ svg.weather-forecast__icon {
 
 /* Modul-Label als ruhiger Untertitel (Footnote, Sekundaerfarbe) - nie versal,
  * nie ueber dem Titel (Craft-Floor-Bann Eyebrow). */
+/* EINE ZEILE (#1698). Seit die Unterzeile eines Termins den Namen seines
+ * Kalenders traegt, steht dort Nutzereingabe: „Familienkalender Schule, Vereine
+ * und alle Arzttermine" braeche auf dem Telefon um und machte die Zeile hoeher
+ * als ihre Nachbarn. Die Zustandskarte spricht in einem Satz und darf weiter
+ * umbrechen. */
 .today-cockpit-card__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-secondary);
   font-size: var(--type-caption);
   line-height: var(--line-height-tight);
+}
+
+.today-cockpit-card--state .today-cockpit-card__sub {
+  white-space: normal;
 }
 
 /* Zeit als trailing Detail: die Programm-Zeile beantwortet „wann", nicht „wie
@@ -4481,6 +4495,8 @@ button.today-cockpit__more--link {
   line-height: var(--line-height-snug);
   hyphens: auto;
   hyphenate-limit-chars: 6 4 4;
+  -webkit-hyphenate-limit-before: 4;
+  -webkit-hyphenate-limit-after: 4;
   overflow-wrap: anywhere;
 }
 
@@ -5616,10 +5632,24 @@ button.today-cockpit__more--link {
   }
 }
 
+/* AUCH DIE UNTERZEILE BLEIBT EINE ZEILE (#1698). Bis dahin stand dort ein
+ * Wort aus der App („Termin", „Aufgabe"); seit sie den Namen des Kalenders
+ * traegt, steht dort Nutzereingabe - „Familienkalender Schule und Vereine"
+ * braeche um und kostete die Hoehe, die WALL_ROW_CAP fuer vier Zeilen
+ * gerechnet hat. */
 .wall-row__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--wall-row-sub);
   line-height: var(--line-height-tight);
   color: var(--color-text-secondary);
+}
+
+/* Die Zustandszeile des leeren Tages spricht in einem Satz („Als Naechstes
+ * morgen: …") und steht allein - sie darf umbrechen wie bisher. */
+.wall-row--state .wall-row__sub {
+  white-space: normal;
 }
 
 .wall-row__time {
@@ -5627,6 +5657,18 @@ button.today-cockpit__more--link {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--color-text-secondary);
+}
+
+/* DAS ENDE WEICHT, WO DIE ZEILE ZU SCHMAL IST (#1698). Auf dem Wandtablet
+ * nimmt „9:30 PM - 11:30 PM" 161 von 617px Zeilenbreite. Auf einer Flaeche
+ * unter Tablettbreite - jemand hat den Schalter auf dem Telefon erwischt -
+ * waren es 132 von 254px: die Uhrzeit breiter als der Titel, der dann nach elf
+ * Zeichen umbrach. Dort bleibt der Beginn allein, wie vor #1698. Dieselbe
+ * Grenze wie beim Titel darueber. */
+@container wall (max-width: 519px) {
+  .wall-row__time-end {
+    display: none;
+  }
 }
 
 .wall-row__time--overdue {
@@ -5661,9 +5703,10 @@ button.today-cockpit__more--link {
 }
 
 /* ── Wer heute dran ist ── */
-/* Gesichter, nicht Namenszeilen. Die Zahl am Rand sagt, wie viel von heute
- * jemanden angeht; WAS es ist, steht links im Programm und wird hier bewusst
- * nicht wiederholt. */
+/* Gesichter, darunter die Aufgaben von heute beim Namen (#1817). Die Zahl am
+ * Rand sagt, was noch offen ist. Ohne Titel - niemand hat eine Aufgabe, oder
+ * die Flaeche hat keinen Platz dafuer (`fitWallWho`) - bleibt es bei der
+ * Reihe von Gesichtern. */
 .wall-who__list {
   list-style: none;
   margin: 0;
@@ -5734,6 +5777,113 @@ button.today-cockpit__more--link {
   white-space: nowrap;
   font-size: var(--wall-row-sub);
   color: var(--color-text-secondary);
+}
+
+/* MIT TITELN wird aus der Reihe von Gesichtern ein Raster von Personen: das
+ * Gesicht mit dem Namen daneben als Kopf, darunter die Zeilen in voller
+ * Spaltenbreite. Ein Titel ist laenger als ein Vorname - unter einem 48px-
+ * Gesicht in einer 72px-Spalte stuende „Spuelma…".
+ *
+ * HOECHSTENS ZWEI NEBENEINANDER, und keine schmaler als drei Gesichter breit.
+ * `auto-fill` allein stellte auf einem grossen Schirm drei schmale Spalten
+ * hin und schnitt „Pack sports bag for t…" ab, waehrend die vierte Person
+ * allein in der zweiten Reihe stand (gemessen 1920x1080). Der Platz gehoert
+ * den Titeln, nicht einer dritten Spalte. */
+.wall-who__list--tasks {
+  --wall-who-cols: 2;
+  --wall-who-min: calc(var(--space-16) * 3);
+  --wall-who-gap: var(--space-5);
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(max(var(--wall-who-min), (100% - (var(--wall-who-cols) - 1) * var(--wall-who-gap)) / var(--wall-who-cols)), 1fr)
+  );
+  gap: var(--space-4) var(--wall-who-gap);
+  align-items: start;
+}
+
+/* Ab fuenf Personen drei nebeneinander: zwei Spalten ergaeben drei Reihen, und
+ * auf 1280x800 bliebe dann unter keinem Gesicht mehr Platz fuer einen Titel
+ * (gemessen: 214px fuer die Liste, drei Koepfe allein brauchen 176px). Eine
+ * schmalere Spalte, die den Anfang jeder Aufgabe nennt, sagt mehr als sechs
+ * Gesichter ohne ein Wort. Gezaehlt wird am Traeger (`:has`), wie beim
+ * Programm. */
+.wall-who__list--tasks:has(> :nth-child(5)) {
+  --wall-who-cols: 3;
+  --wall-who-min: calc(var(--space-16) * 2);
+  --wall-who-gap: var(--space-4);
+}
+
+.wall-who__list--tasks .wall-who__member {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  text-align: start;
+}
+
+.wall-who__list--tasks .wall-who__name {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.wall-who__tasks {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0h);
+  min-width: 0;
+}
+
+/* EINE ZEILE JE AUFGABE, wie im Programm: ein Umbruch kostete die Hoehe einer
+ * weiteren Aufgabe, und die Zeilenzahl ist hier das knappe Gut. */
+.wall-who__task {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1h);
+  min-width: 0;
+  white-space: nowrap;
+  font-size: var(--wall-row-sub);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-primary);
+}
+
+/* Erledigtes tritt zurueck, bleibt aber lesbar: Sekundaerfarbe statt
+ * Deckkraft, damit der Kontrast auf der Buehne der einer Unterzeile ist. Der
+ * Haken traegt den Zustand, kein Durchstreichen - durchgestrichene Schrift
+ * liest auf zwei Metern niemand. */
+.wall-who__task--done {
+  color: var(--color-text-secondary);
+}
+
+.wall-who__task-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wall-who__task-check {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: var(--color-success-ink);
+}
+
+.wall-who__task--more {
+  color: var(--color-text-tertiary);
+}
+
+/* Alles erledigt: die Marke am Gesicht traegt den Haken statt einer Zahl. */
+.wall-who__count--done {
+  min-height: var(--space-8);
+  color: var(--color-success-ink);
+}
+
+.wall-who__count--done svg {
+  width: 1em;
+  height: 1em;
 }
 
 .wall-who__more,
@@ -6120,7 +6270,9 @@ button.today-cockpit__more--link {
 [data-wall-night] .wall-row__title,
 [data-wall-night] .wall-weather__temp,
 [data-wall-night] .wall-weather__range-high,
-[data-wall-night] .wall-weather__day-high {
+[data-wall-night] .wall-weather__day-high,
+[data-wall-night] .wall-who__task,
+[data-wall-night] .wall-who__list--tasks .wall-who__name {
   color: var(--color-text-secondary);
 }
 
@@ -6129,9 +6281,20 @@ button.today-cockpit__more--link {
 [data-wall-night] .clock-widget--wall .clock-widget__date,
 [data-wall-night] .wall-who__name,
 [data-wall-night] .wall-weather__desc,
-[data-wall-night] .wall-weather__day-label {
+[data-wall-night] .wall-weather__day-label,
+[data-wall-night] .wall-who__task--done,
+[data-wall-night] .wall-who__task--more,
+[data-wall-night] .wall-who__task-check,
+[data-wall-night] .wall-who__count--done {
   color: var(--color-text-tertiary);
 }
+
+/* Die Aufgaben unter den Gesichtern (#1817) gehen mit: der offene Titel und
+ * der Name darueber eine Stufe zurueck (oben), Erledigtes und die Zaehlzeile
+ * eine weitere - und der Haken gibt sein Gruen ab wie das Wetterzeichen sein
+ * Bernstein, am Titel wie an der Marke des Gesichts. Die Reihenfolge der
+ * beiden Regeln oben traegt die Stufen: `--done` und `--more` stehen in der
+ * spaeteren und gewinnen gegen `.wall-who__task`. */
 
 /* NACHTS GIBT DIE WAND IHRE FARBE AB, und der Wetterton macht da keine
  * Ausnahme. Der Nachtmodus senkt jede Stimme dieser Flaeche um eine Stufe,
@@ -6541,7 +6704,7 @@ button.today-cockpit__more--link {
 .nutrition-widget { display: grid; gap: var(--space-3); padding: var(--space-4); }
 .nutrition-widget__rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .nutrition-widget__row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--space-2) var(--space-3); }
-.nutrition-widget__label { font-size: var(--text-sm); color: var(--color-text-secondary); min-width: 0; hyphens: auto; hyphenate-limit-chars: 6 4 4; overflow-wrap: anywhere; }
+.nutrition-widget__label { font-size: var(--text-sm); color: var(--color-text-secondary); min-width: 0; hyphens: auto; hyphenate-limit-chars: 6 4 4; -webkit-hyphenate-limit-before: 4; -webkit-hyphenate-limit-after: 4; overflow-wrap: anywhere; }
 .nutrition-widget__bar { grid-column: 1 / -1; grid-row: 2; display: block; block-size: var(--space-2); border-radius: var(--radius-full); background: var(--color-fill-well); overflow: hidden; }
 .nutrition-widget__fill { display: block; block-size: 100%; inline-size: 100%; transform: scaleX(var(--nutrition-scale, 0)); transform-origin: left center; border-radius: inherit; background: var(--module-health); }
 .nutrition-widget__bar--over .nutrition-widget__fill { background: var(--color-warning); }

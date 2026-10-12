@@ -453,6 +453,18 @@ async function runSync({ createClient: makeClient } = {}) {
 
       const client     = await clientFactory(account);
       const serverCals  = await client.fetchCalendars();
+      // Der Server nennt KEINE Collection, obwohl Listen ausgewählt sind: das
+      // ist eine unvollständige Antwort (ein Multistatus, der nur die
+      // Home-Collection nennt oder jede Ressource mit 403 quittiert), kein
+      // leeres Konto. Derselbe Leer-Guard wie beim Prune (#508) - sonst gälte
+      // jede Liste als verschwunden und würde abgeschaltet.
+      if (serverCals.length === 0) {
+        log.warn(
+          `Account ${account.id}: the server listed no collections, but ${enabledLists.length} reminder ` +
+          `list(s) are selected. Skipping this run - assuming an incomplete answer rather than a deleted account.`
+        );
+        continue;
+      }
       const owner       = db.get().prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
       const createdBy   = owner ? owner.id : 1;
 
@@ -506,14 +518,41 @@ async function runSync({ createClient: makeClient } = {}) {
           const todos = parseVTODO(obj.data || '');
           for (const todo of todos) {
             try {
+              // Gesehen ist der Eintrag auch dann, wenn er hier übersprungen
+              // wird - sonst würde der Prune ihn gleich wieder entfernen.
+              seenByModule[module].push(todo.uid);
+
+              // Für dieses Objekt steht die Notiz eines Uploads, der nie
+              // gebucht wurde (#1882) - gleich über welches Konto er lief.
+              // Dann ist es kein Eintrag wie jeder andere: wartet seine Zeile
+              // genau hier, wird es übernommen; sonst wird es weder
+              // importiert noch einer Zeile zugeordnet (gelöscht, anderes
+              // Ziel, woanders gespiegelt, oder sie wartet über ein anderes
+              // Konto), und es kommt auch nicht in den Index dieses Laufs -
+              // dieselbe UID kann rechtmässig in einer anderen Liste des
+              // Kontos liegen. Entfernt wird es von
+              // `releaseLeftoverTodoUploads`. Frisch gefragt: die Zeile kann
+              // gefallen sein, während dieser Lauf noch liest.
+              const unbooked = todoOutbound.isUnbookedOwnUpload(module, todo.uid, sel.list_url);
+              // Der eigene Upload, dessen Antwort verloren ging: in die noch
+              // lokale Zeile übernehmen statt eine zweite anzulegen; ihr
+              // lokaler Stand geht mit dem Outbound dieses Laufs hinauf. Nur
+              // für eine Zeile, die auf den Upload in GENAU diese Liste
+              // wartet - die UID kommt vom Server und weist nichts aus.
+              const adoptOwn = () => !!obj.url && todoOutbound.adoptOwnUpload(module, todo.uid, account.id, obj.url, {
+                listUrl: sel.list_url, targetListId: sel.target_list_id,
+              });
+              if (unbooked && !adoptOwn()) continue;
+
               if (obj.url) {
                 objectsByModule[module].set(todo.uid, {
                   url: obj.url, etag: obj.etag, data: obj.data,
                 });
               }
-              // Gesehen ist der Eintrag auch dann, wenn er hier übersprungen
-              // wird - sonst würde der Prune ihn gleich wieder entfernen.
-              seenByModule[module].push(todo.uid);
+              if (unbooked) {
+                totalItems++;
+                continue;
+              }
 
               // Lokal gelöscht und noch nicht auf dem Server: nicht wieder
               // anlegen, sonst kehrt der Eintrag bei jedem Sync zurück.
@@ -521,6 +560,11 @@ async function runSync({ createClient: makeClient } = {}) {
               // Lokale Bearbeitung wartet auf ihren Push: der alte Serverstand
               // darf sie nicht überschreiben.
               if (pendingByModule[module].dirty.has(todo.uid)) continue;
+
+              if (adoptOwn()) {
+                totalItems++;
+                continue;
+              }
 
               if (module === 'shopping') {
                 upsertShoppingItem(sel, todo, account.id, obj.url || null);
@@ -593,6 +637,16 @@ async function runSync({ createClient: makeClient } = {}) {
         } catch (err) {
           log.error(`Outbound VTODO changes failed for account ${account.id} (${module}):`, err.message);
         }
+      }
+
+      // Die Reste nie bestätigter Uploads entfernen (#1882). Nach dem Abruf,
+      // der sie nicht importiert hat, und vor den Uploads: eine Zeile mit
+      // neuem Ziel in diesem Konto geht so nicht neben ihren Rest.
+      try {
+        const cleared = await todoOutbound.releaseLeftoverTodoUploads(client, account.id);
+        if (cleared) log.info(`${cleared} leftover(s) of unconfirmed uploads removed from the server.`);
+      } catch (err) {
+        log.error(`Removing leftovers of unconfirmed uploads failed for account ${account.id}:`, err.message);
       }
 
       // Hier angelegte Aufgaben hochladen (#695). Bewusst als LETZTER Schritt:

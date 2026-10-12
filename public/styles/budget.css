@@ -709,8 +709,14 @@
   text-overflow: ellipsis;
   overflow-wrap: anywhere;
   /* Ein Wort, das allein breiter ist als die Spalte ("Wertpapierdepot"),
-   * trennt an der Silbe statt vor dem letzten Buchstaben. */
+   * trennt an der Silbe statt vor dem letzten Buchstaben. Mindestens vier
+   * Zeichen vor und nach der Trennung (wie die uebrigen Textbloecke,
+   * layout.css `hyphenate-limit-chars`): ohne Grenze steht "Wertpapierde-pot"
+   * oder "Gemeinsa-mes" in der schmalen Spalte (#1774). */
   hyphens: auto;
+  hyphenate-limit-chars: 6 4 4;
+  -webkit-hyphenate-limit-before: 4;
+  -webkit-hyphenate-limit-after: 4;
   min-width: 0;
 }
 
@@ -740,16 +746,21 @@
   min-width: 0;
 }
 
-/* Die Saldo-Spalte schrumpft NIE (Re-Critique 2026-09-28 P1-2): mit
- * `flex: 0 1 auto; min-width: 0` lief sie bei 390px unter den `nowrap`-Betrag,
- * und der lief nach links in den Namen ("Gemeinsames Gi.8.544,47 €"). Gekuerzt
- * wird der Name (`.budget-account__name-text` ellipsiert). */
+/* Die Saldo-Spalte gibt nach, aber nie unter ihren Betrag (Re-Critique
+ * 2026-09-28 P1-2, #1774). Mit `flex: 0 1 auto; min-width: 0` lief sie bei
+ * 390px unter den `nowrap`-Betrag, und der lief nach links in den Namen
+ * ("Gemeinsames Gi.8.544,47 €"). Ohne `min-width: 0` bleibt der automatische
+ * Mindestwert der Spalte die Breite des Betrags: sie schrumpft nur um die
+ * umbrechbare Startzeile (`.budget-account__starting`), nie in den Saldo
+ * hinein. Der Name bekommt so die Breite, die er braucht, bevor er mitten im
+ * Wort umbricht ("Housekeepin" und "g cash"); gekuerzt wird erst danach, und zwar
+ * der Name (`.budget-account__name-text` ellipsiert). */
 .budget-account__figures {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: var(--space-0h);
-  flex: 0 0 auto;
+  flex: 0 1 auto;
 }
 
 /* DIE BETRAGSREGEL (Critique 2026-10-05, R16): ein Betrag in einer Zeile oder
@@ -776,7 +787,9 @@
 .budget-account__starting {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
-  white-space: nowrap;
+  /* Umbrechbar: die Startzeile ist das, was die Saldo-Spalte hergibt. */
+  white-space: normal;
+  text-align: end;
 }
 
 /* Der Chevron ist entfallen (Redesign Runde 6, Phase 1) - dieselbe Bauart wie
@@ -1256,6 +1269,46 @@
   padding: var(--space-2) var(--space-4);
 }
 
+button.budget-bar-row {
+  min-block-size: var(--target-base);
+  background: transparent;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+/* Der Balken ist ein Knopf und antwortet dem Zeiger wie die Planzeile
+ * darunter (`.budget-plan-row`). Nicht am gedrueckten: dessen Toenung ist der
+ * Zustand, und die neutrale Hover-Flaeche wuerde ihn beim Ueberfahren loeschen.
+ * Unter (hover: hover): auf Touch klebt :hover nach dem Tipp - der eben
+ * abgewaehlte Balken saehe dort weiter getoent aus. */
+@media (hover: hover) {
+  button.budget-bar-row:not(.is-category-selected):hover {
+    background: var(--color-surface-hover);
+  }
+}
+
+/* Die Zeilen liegen in einer Karte mit `overflow: hidden` (die runden Ecken):
+ * ein Ring mit dem ueblichen Abstand nach aussen wird dort an allen vier
+ * Seiten abgeschnitten - der Balken hatte den Fokus, und man sah ihn nicht.
+ * Deshalb der Innen-Abstand, den tokens.css fuer geclippte Kanten fuehrt. */
+button.budget-bar-row:focus-visible {
+  outline-offset: var(--focus-ring-offset-inset);
+}
+
+.budget-bar-row.is-category-selected {
+  background: color-mix(in srgb, var(--module-accent, var(--color-accent)) var(--tint-state), var(--color-surface));
+  color: var(--color-text-primary);
+}
+
+.budget-subcategory-breakdown {
+  width: 100%;
+  margin-block-end: var(--space-2);
+}
+
+.budget-subcategory-breakdown-row {
+  width: 100%;
+  margin-block-start: var(--space-3);
+}
+
 .budget-bar-row__label  { grid-area: 1 / 1; }
 .budget-bar-row__amount { grid-area: 1 / 2; }
 .budget-bar-row__track  { grid-area: 2 / 1 / 3 / 3; }
@@ -1277,6 +1330,7 @@
   color: var(--color-text-secondary);
   overflow-wrap: anywhere;
   hyphens: auto;
+  text-align: start;
 }
 
 /* Ab hier ist Platz fuer alle drei nebeneinander: 168px fassen jeden der neun
@@ -1304,6 +1358,7 @@
 }
 
 .budget-bar-row__fill {
+  display: block;
   width: 100%;
   height: 100%;
   border-radius: var(--radius-full);

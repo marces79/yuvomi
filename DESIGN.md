@@ -549,7 +549,8 @@ Inhalt, kein Verlauf ueber eine Karte, kein Text auf einer Flaeche, die nicht ge
   enthielten Kollisionspaare, die niemand auseinanderhalten konnte - zwei Violetts, zwei
   Teals. Jetzt gibt es neun klar trennbare Familien (`overview`, `time`, `work`, `kitchen`,
   `money`, `people`, `health`, `records`, `neutral`), jedes `--module-*` bezieht aus seiner,
-  und **innerhalb einer Familie unterscheidet das Siegel-Icon, nicht der Ton**. Damit
+  und **innerhalb einer Familie unterscheidet das Siegel-Icon, nicht der Ton** (an einer
+  Mischstelle darf es das Zeichen des Objekts sein, siehe Herkunfts-Regel). Damit
   verschwinden die Kollisionen strukturell statt durch Nachjustieren. Die Kueche war der
   Praezedenzfall: vier Module, ein Ton, unterschieden durch ihr Zeichen. Die privaten
   `--_family-*` tragen den Dark-Wechsel; die oeffentliche `--module-*`-API bleibt vollstaendig.
@@ -993,7 +994,9 @@ Subheadline 15, Footnote 13, Caption 2 11.
 und "SAUERSTOFFSAETTI/GUNG" kamen aus `overflow-wrap: break-word` neben `hyphens: manual`:
 das Wort brach dort, wo die Zeile endete, ohne Strich. Wer ein Wort brechen laesst, gibt
 seinem Subjekt `hyphens: auto; hyphenate-limit-chars: 6 4 4` (die App setzt `lang`, der
-Browser kennt die Silben); `overflow-wrap: anywhere` bleibt die letzte Stufe fuer
+Browser kennt die Silben), dazu direkt darunter `-webkit-hyphenate-limit-before: 4;
+-webkit-hyphenate-limit-after: 4`, weil Safari die Kurzform nicht kennt und sonst ohne Grenze
+trennt (#1774); `overflow-wrap: anywhere` bleibt die letzte Stufe fuer
 Zeichenketten ohne Silben (URLs, Codes, Zeitangaben). Versal-Labels, die nicht passen,
 werden kuerzer oder verlieren den Versal-Transform, statt mitten im Wort zu brechen. Der
 Guard (`test:typography`) prueft die Regel am Subjekt, nicht die Schreibweise, und fuehrt
@@ -3125,7 +3128,10 @@ Herkunft zeigt man nur, wo sie nicht selbstverstaendlich ist. Daraus folgen gena
 - **Jede MISCHSTELLE** - eine Liste, deren Zeilen aus verschiedenen Modulen stammen
   (moduluebergreifende Suche, "Heute wichtig", Dashboard-Widget-Koepfe, "Mehr"-Liste,
   Benachrichtigungsdarstellung) - gibt jedem Objekt sein Siegel und BENENNT dabei die fremde
-  Herkunft, inline oder ueber die Klasse ihres Traegers.
+  Herkunft, inline oder ueber die Klasse ihres Traegers. Die Herkunft nennt der TON der
+  Scheibe; das ZEICHEN darf das des Objekts sein, wo das Objekt eines traegt (der Mahlzeittyp,
+  das am Termin gewaehlte Icon in "Heute wichtig" und an der Wand). Ohne eigenes Zeichen steht
+  das des Moduls, und eine Zeile, die fuer mehrere Objekte spricht, behaelt es immer.
 - **Im eigenen Modul** steht es genau einmal, als Absender im Kopf (siehe Modulkopf). Es
   benennt dort nichts, sondern ERBT den Ton des Raumes, in dem es steht - genau daran ist die
   Rolle zu erkennen.
@@ -3686,6 +3692,13 @@ Gangart.** Gelesen wird sie aus zwei Metern und ohne Beruehrung; alles Weitere f
 diesem einen Satz. Der Screensaver bleibt der ruhende Zustand und legt sich nach seiner
 Leerlaufzeit unveraendert darueber.
 
+**Eine geteilte Flaeche, kein persoenlicher Bildschirm** (#1817). Die Wand haengt in der Kueche,
+gleich aus wessen Sitzung sie geoeffnet wurde - sie zeigt deshalb nur, was der ganze Haushalt
+sehen darf: Aufgaben und Termine mit Sichtbarkeit "alle", Termine aus Abos nur aus geteilten.
+Was einer Person allein gehoert, steht an keiner Stelle der Wand, auch nicht fuer sie selbst,
+und wer nur darueber "dran" waere, erscheint nicht unter den Gesichtern. Durchgesetzt am Leser
+(`audience=household`), nicht im Browser. Uebersicht und Heute-Blatt bleiben persoenlich.
+
 **Die Shell tritt ab.** Sidebar und Tab-Leiste sind Arm-Laengen-Moebel; auf zwei Metern sind
 sie siebzehn unleserliche Ziele. Auch die Installations-Einladung verschwindet - auf einer
 Anzeige, die niemand bedient, waere sie die lauteste Karte im Bild.
@@ -3712,6 +3725,18 @@ Umbruch kostet die Hoehe einer ganzen weiteren Zeile, und die Flaeche hat sechs 
 sie scrollen muesste. Die Zaehler an den Gesichtern sind aus derselben Rechnung keine
 Mikro-Badges, sondern volle Marken mit Kante - eine 13px-Marke an einem 56px-Gesicht waere aus
 zwei Metern Dekoration.
+
+**Unter jedem Gesicht stehen die Aufgaben von heute beim Namen, und die Zeilenzahl folgt dem
+Platz** (#1817). Die Zahl sagt, DASS etwas offen ist, der Titel sagt WAS. Offene zuerst in
+Primaerfarbe, darunter das heute Erledigte in Sekundaerfarbe mit Haken - kein Durchstreichen,
+keine Deckkraft: auf zwei Metern liest beides niemand. Mit Titeln wird aus der Reihe der
+Gesichter ein Raster von Personen (Gesicht und Vorname als Kopf, die Zeilen in voller
+Spaltenbreite; ab fuenf Personen drei Spalten). Weil die Wand nicht scrollt, steigt
+`fitWallWho` eine Leiter von Budgets hinab, bis das Bild passt: erst weichen die Haken, auf der
+ganzen Flaeche, dann die offenen Titel; was nicht passt, ist eine Zahl ("+2 weitere"), und die
+letzte Stufe ist die Reihe der Gesichter wie zuvor. Gemessen bei 1280x800: vier Personen tragen
+drei Zeilen, sechs tragen zwei. Nachts geht die Liste mit der Wand: offener Titel und Name eine
+Stufe zurueck, Erledigtes und Zaehlzeile eine weitere, und der Haken gibt sein Gruen ab.
 
 **Nachtabsenkung nach UHRZEIT, nicht nach Farbmodus.** Zwischen 22 und 6 Uhr traegt die Wurzel
 `data-wall-night` und der dunkle Grund wird erzwungen, auch bei hellem Theme: das Problem im

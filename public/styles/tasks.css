@@ -501,9 +501,14 @@
   cursor: pointer;
 }
 
-.list-group__reset:hover,
 .list-group__reset:focus-visible {
   color: var(--color-text-primary);
+}
+
+@media (hover: hover) {
+  .list-group__reset:hover {
+    color: var(--color-text-primary);
+  }
 }
 
 /* Status-Checkbox */
